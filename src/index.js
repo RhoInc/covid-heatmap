@@ -8,7 +8,7 @@ import callbacks from './callbacks/index';
 import layout from './layout';
 import styles from './styles';
 
-export default function myPackageFunctionGoesHere(element = 'body', settings = {}) {
+export default function safetyWaffle(element = 'body', settings = {}) {
     //layout and styles
     layout(element);
     styles();
@@ -37,6 +37,21 @@ export default function myPackageFunctionGoesHere(element = 'body', settings = {
     //Define chart callbacks.
     for (const callback in callbacks)
         chart.on(callback.substring(2).toLowerCase(), callbacks[callback]);
+
+    //listing
+    const listing = createTable(
+        document.querySelector(element).querySelector('#wc-listing'),
+        configuration.listingSettings()
+    );
+    listing.wrap.style('display', 'none'); // empty table's popping up briefly
+    listing.init([]);
+
+    //listing
+    chart.waffle = {};
+    chart.waffle.wrap = d3.select(document.querySelector(element).querySelector('#wc-waffle'));
+
+    chart.listing = listing;
+    listing.chart = chart;
 
     return chart;
 }

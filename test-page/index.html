@@ -5,28 +5,34 @@ redirect_from:
 
 <html>
     <head>
-      <title>myPackageNameGoesHere - Example</title>
+      <title>safety-waffle - Example</title>
       <meta http-equiv = 'Content-Type' content = 'text/html; charset = utf-8'>
 
       <script type = 'text/javascript' src = 'https://d3js.org/d3.v3.min.js'></script>
       <script type = 'text/javascript' src = 'https://cdn.jsdelivr.net/gh/RhoInc/Webcharts/build/webcharts.min.js'></script>
 
-      <script type = 'text/javascript' src = '../myPackageFunctionGoesHere.js'></script>
+      <script type = 'text/javascript' src = '../safetyWaffle.js'></script>
 
       <link type = 'text/css' rel = 'stylesheet' href = 'https://cdn.jsdelivr.net/gh/RhoInc/Webcharts/css/webcharts.min.css'>
       <link type = 'text/css' rel = 'stylesheet' href = './index.css'>
     </head>
 
     <body>
-      <div id = 'title'>myPackageNameGoesHere</div>
+      <div id = 'title'>safety-waffle</div>
       <div id = 'subtitle'>Example 1</div>
-      <div id= 'info'>This is a demo page for the interactive myPackageNameGoesHere tool created by the Rho. Code, details and documentation are available on <a href="myPackageURLGoesHere">github</a>.</div>
+      <div id= 'info'>This is a demo page for the interactive safety-waffle tool created by the Rho. Code, details and documentation are available on <a href="https://github.com/RhoInc/safety-waffle">github</a>.</div>
       <div id = 'container'></div>
     </body>
 
     <script type = 'text/javascript'>
-      const chart =myPackageFunctionGoesHere('#container', {});
-      d3.csv('myDataPathGoesHere', function (data) {
+      let settings = {
+          id_col: 'state',
+          time_col: 'date',
+          value_col: 'positive',
+          filters: [] //updated in sync settings
+        }
+      const chart =safetyWaffle('#container', settings);
+      d3.json('https://covidtracking.com/api/states/daily', function (data) {      
         chart.init(data);
       });
 </script>

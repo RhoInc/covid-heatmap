@@ -9,6 +9,10 @@ export default function layout(element) {
     container
         .append('div')
         .classed('wc-component', true)
+        .attr('id', 'wc-waffle');
+    container
+        .append('div')
+        .classed('wc-component', true)
         .attr('id', 'wc-chart');
     container
         .append('div')
