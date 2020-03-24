@@ -2,11 +2,15 @@ export default function controlInputs() {
     return [
         {
             type: 'dropdown',
-            values: ['log', 'linear'],
-            label: 'Log/Linear',
-            option: 'y.type',
-            require: true,
-            start: 'linear'
+            label: 'Outcome',
+            option: 'value_col',
+            require: true
+        },
+        {
+            type: 'checkbox',
+            label: 'Show Raw Values',
+            option: 'show_values',
+            require: true
         }
     ];
 }

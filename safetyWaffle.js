@@ -153,6 +153,7 @@
             id_col: 'USUBJID',
             time_col: 'VISIT',
             value_col: 'STRESN',
+            show_values: false,
             filters: [] //updated in sync settings
         };
     }
@@ -197,11 +198,15 @@
         return [
             {
                 type: 'dropdown',
-                values: ['log', 'linear'],
-                label: 'Log/Linear',
-                option: 'y.type',
-                require: true,
-                start: 'linear'
+                label: 'Outcome',
+                option: 'value_col',
+                require: true
+            },
+            {
+                type: 'checkbox',
+                label: 'Show Raw Values',
+                option: 'show_values',
+                require: true
             }
         ];
     }
@@ -260,13 +265,16 @@
     function makeWaffle() {
         var config = this.config;
         var waffle = this.waffle;
+
+        waffle.wrap.selectAll('*').remove();
+        config.max_cut = 1000;
         console.log(waffle);
 
         // color scale
         var colorScale = d3.scale
             .linear()
             //.domain(d3.extent(chart.raw_data, d => d[config.value_col]))
-            .domain([0, 1000])
+            .domain([0, config.max_cut])
             .range(['green', 'red'])
             .interpolate(d3.interpolateHcl);
 
@@ -292,6 +300,9 @@
 
         console.log(waffle.raw_data);
         waffle.raw_data.forEach(function(id) {
+            id.total = d3.sum(id.values, function(d) {
+                return d[config.value_col];
+            });
             id.all_dates = all_times.map(function(time) {
                 var match = id.values.filter(function(d) {
                     return d[config.time_col] == time;
@@ -333,11 +344,33 @@
             .append('td')
             .attr('class', 'values')
             .text(function(d) {
-                return d.value;
+                return config.show_values ? d.value : '';
             })
             .style('width', '10px')
+            .attr('title', function(d) {
+                return (
+                    config.time_col +
+                    ':' +
+                    d.time +
+                    '\n' +
+                    config.value_col +
+                    ':' +
+                    d.value +
+                    '\n' +
+                    config.id_col +
+                    ':' +
+                    d.id
+                );
+            })
             .style('background', function(d) {
                 return d.value == null ? '#ccc' : d.value < 1000 ? colorScale(d.value) : 'red';
+            });
+
+        waffle.rows
+            .append('td')
+            .attr('class', 'total')
+            .text(function(d) {
+                return d.total;
             });
     }
 
