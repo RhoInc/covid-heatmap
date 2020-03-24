@@ -15,11 +15,8 @@ export default function makeWaffle() {
         .range(['green', 'red'])
         .interpolate(d3.interpolateHcl);
 
-    console.log(colorScale.range());
-    console.log(colorScale.domain());
     // date list
     let all_times = d3.set(this.raw_data.map(d => d[config.time_col])).values();
-    console.log(all_times);
 
     // make a dataset for the waffle chart
     waffle.raw_data = d3
@@ -27,7 +24,6 @@ export default function makeWaffle() {
         .key(d => d[config.id_col])
         .entries(this.raw_data);
 
-    console.log(waffle.raw_data);
     waffle.raw_data.forEach(function(id) {
         id.total = d3.sum(id.values, d => d[config.value_col]);
         id.all_dates = all_times.map(function(time) {
@@ -41,6 +37,15 @@ export default function makeWaffle() {
         });
     });
 
+    waffle.raw_data.sort(function(a, b) {
+        if (config.sort_alpha) {
+            console.log('alpha');
+            return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
+        } else {
+            console.log('numeric');
+            return b.total - a.total;
+        }
+    });
     console.log(waffle.raw_data);
 
     // draw the waffle chart

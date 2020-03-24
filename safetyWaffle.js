@@ -154,6 +154,7 @@
             time_col: 'VISIT',
             value_col: 'STRESN',
             show_values: false,
+            sort_alpha: false,
             filters: [] //updated in sync settings
         };
     }
@@ -206,6 +207,13 @@
                 type: 'checkbox',
                 label: 'Show Raw Values',
                 option: 'show_values',
+                require: true
+            },
+            ,
+            {
+                type: 'checkbox',
+                label: 'Sort Alphabetical',
+                option: 'sort_alpha',
                 require: true
             }
         ];
@@ -278,8 +286,6 @@
             .range(['green', 'red'])
             .interpolate(d3.interpolateHcl);
 
-        console.log(colorScale.range());
-        console.log(colorScale.domain());
         // date list
         var all_times = d3
             .set(
@@ -288,7 +294,6 @@
                 })
             )
             .values();
-        console.log(all_times);
 
         // make a dataset for the waffle chart
         waffle.raw_data = d3
@@ -298,7 +303,6 @@
             })
             .entries(this.raw_data);
 
-        console.log(waffle.raw_data);
         waffle.raw_data.forEach(function(id) {
             id.total = d3.sum(id.values, function(d) {
                 return d[config.value_col];
@@ -316,6 +320,15 @@
             });
         });
 
+        waffle.raw_data.sort(function(a, b) {
+            if (config.sort_alpha) {
+                console.log('alpha');
+                return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
+            } else {
+                console.log('numeric');
+                return b.total - a.total;
+            }
+        });
         console.log(waffle.raw_data);
 
         // draw the waffle chart

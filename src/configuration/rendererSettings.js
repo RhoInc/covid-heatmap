@@ -4,6 +4,7 @@ export default function rendererSettings() {
         time_col: 'VISIT',
         value_col: 'STRESN',
         show_values: false,
+        sort_alpha: false,
         filters: [] //updated in sync settings
     };
 }
