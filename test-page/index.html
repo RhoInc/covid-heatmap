@@ -1,6 +1,6 @@
 <html>
     <head>
-      <title>COVID-19 Waffle plot - US States</title>
+      <title>COVID Waffle plot - US States</title>
       <meta http-equiv = 'Content-Type' content = 'text/html; charset = utf-8'>
 
       <script type = 'text/javascript' src = 'https://d3js.org/d3.v3.min.js'></script>
@@ -13,10 +13,15 @@
     </head>
 
     <body>
-      <div id = 'title'>COVID-19 Waffle plot - US States</div>
-      <div id= 'details'>This page shows COVID-19 outcomes over time in the US with darker cells indicating larger values (n > 1000 shown in <span style="color:#e34a33; text-emphasis:bold;">orange</span>). Chart uses most recent data from <a href="https://covidtracking.com/">the COVID tracking project.</a> Code for the visualization is available on <a href="https://github.com/RhoInc/safety-waffle">github</a>. 
+      <div id = 'title'>COVID Waffle plot - US States</div>
+      <div id= 'subtitle'>COVID outcomes over time for US states. Darker cells indicate larger values - n>1000 shown in <span style="color:#e34a33; text-emphasis:bold;">orange</span>.
       </div>
       <div id = 'container'></div>
+      <div id="details">References: Chart uses most recent data from <a href="https://covidtracking.com/">the COVID tracking project.</a> Code for the
+      visualization is available on <a href="https://github.com/RhoInc/safety-waffle">github</a>. Design inspired by static,
+      country-level waffle plot in the <a href="https://www.nytimes.com/interactive/2020/world/coronavirus-maps.html">New
+        York Times</a> and this <a href="https://focusgroupcausality.wordpress.com/2013/08/02/data-visualisation-part-ii-turning-longitudinal-data-from-spaghetti-to-something-more-easy-to-digest/">blog post</a>.</div>
+
     </body>
 
     <script type = 'text/javascript'>
