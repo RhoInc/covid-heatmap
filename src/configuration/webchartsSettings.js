@@ -22,6 +22,6 @@ export default function webchartsSettings() {
         gridlines: 'xy',
         aspect: 3,
         color_by: null,
-        max_width: 900
+        width: 900
     };
 }

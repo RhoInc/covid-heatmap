@@ -29,6 +29,13 @@
     border-radius:0.2em
 }
 
+#details {
+    color:#999;
+    font-size:small;
+    margin: 0 2% 12px 2%;
+    border-radius:0.2em
+}
+
 #container {
     width: 96%;
     margin: 12px 2%;

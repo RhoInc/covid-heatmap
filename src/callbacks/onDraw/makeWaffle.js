@@ -5,56 +5,50 @@ export default function makeWaffle() {
 
     waffle.wrap.selectAll('*').remove();
     config.max_cut = 1000;
-    console.log(waffle);
 
     // color scale
     var colorScale = d3.scale
         .linear()
         //.domain(d3.extent(chart.raw_data, d => d[config.value_col]))
-        .domain([0, config.max_cut])
-        .range(['green', 'red'])
+        .domain([1, config.max_cut])
+        .range(['#fee8c8', '#e34a33'])
         .interpolate(d3.interpolateHcl);
 
-    // date list
-    let all_times = d3.set(this.raw_data.map(d => d[config.time_col])).values();
-
-    // make a dataset for the waffle chart
-    waffle.raw_data = d3
-        .nest()
-        .key(d => d[config.id_col])
-        .entries(this.raw_data);
-
-    waffle.raw_data.forEach(function(id) {
-        id.total = d3.sum(id.values, d => d[config.value_col]);
-        id.all_dates = all_times.map(function(time) {
-            let match = id.values.filter(d => d[config.time_col] == time);
-            let shell = {
-                id: id.key,
-                time: time,
-                value: match.length > 0 ? match[0][config.value_col] : null
-            };
-            return shell;
-        });
-    });
-
-    waffle.raw_data.sort(function(a, b) {
-        if (config.sort_alpha) {
-            console.log('alpha');
-            return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
-        } else {
-            console.log('numeric');
-            return b.total - a.total;
-        }
-    });
-    console.log(waffle.raw_data);
-
     // draw the waffle chart
-    waffle.table = waffle.wrap.append('table');
+    waffle.table = waffle.wrap.append('table').style('border-collapse', 'collapse');
+
+    waffle.head = waffle.table.append('thead').append('tr');
+    waffle.head
+        .append('th')
+        .attr('class', 'th-id')
+        .text('State')
+        .style('text-align', 'left');
+
+    let start_date = d3.time.format('%Y%m%d').parse(d3.min(config.all_times));
+    let start_datef = d3.time.format('%d%b')(start_date);
+    let end_date = d3.time.format('%Y%m%d').parse(d3.max(config.all_times));
+    let end_datef = d3.time.format('%d%b')(end_date);
+    waffle.head
+        .append('th')
+        .attr('class', 'th-start')
+        .attr('colspan', Math.floor(config.all_times.length / 2))
+        .style('text-align', 'left')
+        .style('border-left', '1px solid #ccc')
+        .style('padding-left', '0.2em')
+        .html(start_datef + '&#x2192;');
+    waffle.head
+        .append('th')
+        .attr('class', 'th-end')
+        .attr('colspan', Math.ceil(config.all_times.length / 2))
+        .style('text-align', 'right')
+        .style('border-right', '1px solid #ccc')
+        .style('padding-right', '0.2em')
+        .html('&#x2190;' + end_datef);
 
     waffle.tbody = waffle.table.append('tbody');
     waffle.rows = waffle.tbody
         .selectAll('tr')
-        .data(waffle.raw_data)
+        .data(chart.nested_data)
         .enter()
         .append('tr');
 
@@ -69,7 +63,9 @@ export default function makeWaffle() {
         .enter()
         .append('td')
         .attr('class', 'values')
-        .text(d => (config.show_values ? d.value : ''))
+        .text(d =>
+            !config.show_values ? '' : d[config.value_col] == null ? '' : d[config.value_col]
+        )
         .style('width', '10px')
         .attr(
             'title',
@@ -80,18 +76,31 @@ export default function makeWaffle() {
                 '\n' +
                 config.value_col +
                 ':' +
-                d.value +
+                d[config.value_col] +
                 '\n' +
                 config.id_col +
                 ':' +
                 d.id
         )
         .style('background', d =>
-            d.value == null ? '#ccc' : d.value < 1000 ? colorScale(d.value) : 'red'
-        );
+            d[config.value_col] == null
+                ? 'white'
+                : d[config.value_col] == 0
+                ? 'white'
+                : d[config.value_col] < 1000
+                ? colorScale(d[config.value_col])
+                : '#e34a33'
+        )
+        .style('font-size', '0.6em')
+        .style('padding', '0 0.2em')
+        .style('color', '#333')
+        .style('text-align', 'center')
+        .style('cursor', 'pointer')
+        .style('border', d => (d.value == null ? null : '1px solid #ccc'));
 
     waffle.rows
         .append('td')
         .attr('class', 'total')
-        .text(d => d.total);
+        .text(d => d[config.value_col + '_total'])
+        .style('padding-left', '.5em');
 }

@@ -150,11 +150,12 @@
 
     function rendererSettings() {
         return {
-            id_col: 'USUBJID',
-            time_col: 'VISIT',
-            value_col: 'STRESN',
+            id_col: 'state',
+            time_col: 'date',
+            value_col: 'positive',
             show_values: false,
             sort_alpha: false,
+            values: ['positive', 'total', 'hospitalized', 'death'],
             filters: [] //updated in sync settings
         };
     }
@@ -183,7 +184,7 @@
             gridlines: 'xy',
             aspect: 3,
             color_by: null,
-            max_width: 900
+            width: 900
         };
     }
 
@@ -201,6 +202,7 @@
                 type: 'dropdown',
                 label: 'Outcome',
                 option: 'value_col',
+                values: ['total', 'positive', 'hospitalized', 'death'],
                 require: true
             },
             {
@@ -254,7 +256,60 @@
         listingSettings: listingSettings
     };
 
-    function onInit() {}
+    function dataPrep() {
+        var config = this.config;
+        config.all_times = d3
+            .set(
+                this.raw_data.map(function(d) {
+                    return d[config.time_col];
+                })
+            )
+            .values();
+
+        this.nested_data = d3
+            .nest()
+            .key(function(d) {
+                return d[config.id_col];
+            })
+            .entries(this.raw_data);
+
+        this.nested_data.forEach(function(id) {
+            id.all_dates = config.all_times.map(function(time) {
+                var match = id.values.filter(function(d) {
+                    return d[config.time_col] == time;
+                });
+                var prev = id.values.filter(function(d) {
+                    return d[config.time_col] == time - 1;
+                });
+                var shell = {
+                    id: id.key,
+                    time: time,
+                    value: match.length > 0 ? match[0][config.value_col] : null
+                };
+                config.values.forEach(function(val_name) {
+                    shell[val_name + '_raw'] = match.length > 0 ? match[0][val_name] : null; //todays cumulative count
+                    shell[val_name + '_prev'] = prev.length > 0 ? prev[0][val_name] : null; //yesterday's cumulative count
+                    shell[val_name] = +shell[val_name + '_raw'] - +shell[val_name + '_prev']; // new today cases
+                });
+                return shell;
+            });
+            //get totals
+            config.values.forEach(function(val_name) {
+                id[val_name + '_total'] = d3.max(id.values, function(d) {
+                    return d[val_name];
+                })
+                    ? d3.max(id.values, function(d) {
+                          return d[val_name];
+                      })
+                    : 0;
+            });
+        });
+        console.log(this.nested_data);
+    }
+
+    function onInit() {
+        dataPrep.call(this);
+    }
 
     function onLayout() {
         this.wrap
@@ -271,73 +326,56 @@
     function onDatatransform() {}
 
     function makeWaffle() {
+        var chart = this;
         var config = this.config;
         var waffle = this.waffle;
 
         waffle.wrap.selectAll('*').remove();
         config.max_cut = 1000;
-        console.log(waffle);
 
         // color scale
         var colorScale = d3.scale
             .linear()
             //.domain(d3.extent(chart.raw_data, d => d[config.value_col]))
-            .domain([0, config.max_cut])
-            .range(['green', 'red'])
+            .domain([1, config.max_cut])
+            .range(['#fee8c8', '#e34a33'])
             .interpolate(d3.interpolateHcl);
 
-        // date list
-        var all_times = d3
-            .set(
-                this.raw_data.map(function(d) {
-                    return d[config.time_col];
-                })
-            )
-            .values();
-
-        // make a dataset for the waffle chart
-        waffle.raw_data = d3
-            .nest()
-            .key(function(d) {
-                return d[config.id_col];
-            })
-            .entries(this.raw_data);
-
-        waffle.raw_data.forEach(function(id) {
-            id.total = d3.sum(id.values, function(d) {
-                return d[config.value_col];
-            });
-            id.all_dates = all_times.map(function(time) {
-                var match = id.values.filter(function(d) {
-                    return d[config.time_col] == time;
-                });
-                var shell = {
-                    id: id.key,
-                    time: time,
-                    value: match.length > 0 ? match[0][config.value_col] : null
-                };
-                return shell;
-            });
-        });
-
-        waffle.raw_data.sort(function(a, b) {
-            if (config.sort_alpha) {
-                console.log('alpha');
-                return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
-            } else {
-                console.log('numeric');
-                return b.total - a.total;
-            }
-        });
-        console.log(waffle.raw_data);
-
         // draw the waffle chart
-        waffle.table = waffle.wrap.append('table');
+        waffle.table = waffle.wrap.append('table').style('border-collapse', 'collapse');
+
+        waffle.head = waffle.table.append('thead').append('tr');
+        waffle.head
+            .append('th')
+            .attr('class', 'th-id')
+            .text('State')
+            .style('text-align', 'left');
+
+        var start_date = d3.time.format('%Y%m%d').parse(d3.min(config.all_times));
+        var start_datef = d3.time.format('%d%b')(start_date);
+        var end_date = d3.time.format('%Y%m%d').parse(d3.max(config.all_times));
+        var end_datef = d3.time.format('%d%b')(end_date);
+        waffle.head
+            .append('th')
+            .attr('class', 'th-start')
+            .attr('colspan', Math.floor(config.all_times.length / 2))
+            .style('text-align', 'left')
+            .style('border-left', '1px solid #ccc')
+            .style('padding-left', '0.2em')
+            .html(start_datef + '&#x2192;');
+        waffle.head
+            .append('th')
+            .attr('class', 'th-end')
+            .attr('colspan', Math.ceil(config.all_times.length / 2))
+            .style('text-align', 'right')
+            .style('border-right', '1px solid #ccc')
+            .style('padding-right', '0.2em')
+            .html('&#x2190;' + end_datef);
 
         waffle.tbody = waffle.table.append('tbody');
         waffle.rows = waffle.tbody
             .selectAll('tr')
-            .data(waffle.raw_data)
+            .data(chart.nested_data)
             .enter()
             .append('tr');
 
@@ -357,7 +395,11 @@
             .append('td')
             .attr('class', 'values')
             .text(function(d) {
-                return config.show_values ? d.value : '';
+                return !config.show_values
+                    ? ''
+                    : d[config.value_col] == null
+                    ? ''
+                    : d[config.value_col];
             })
             .style('width', '10px')
             .attr('title', function(d) {
@@ -368,7 +410,7 @@
                     '\n' +
                     config.value_col +
                     ':' +
-                    d.value +
+                    d[config.value_col] +
                     '\n' +
                     config.id_col +
                     ':' +
@@ -376,18 +418,46 @@
                 );
             })
             .style('background', function(d) {
-                return d.value == null ? '#ccc' : d.value < 1000 ? colorScale(d.value) : 'red';
+                return d[config.value_col] == null
+                    ? 'white'
+                    : d[config.value_col] == 0
+                    ? 'white'
+                    : d[config.value_col] < 1000
+                    ? colorScale(d[config.value_col])
+                    : '#e34a33';
+            })
+            .style('font-size', '0.6em')
+            .style('padding', '0 0.2em')
+            .style('color', '#333')
+            .style('text-align', 'center')
+            .style('cursor', 'pointer')
+            .style('border', function(d) {
+                return d.value == null ? null : '1px solid #ccc';
             });
 
         waffle.rows
             .append('td')
             .attr('class', 'total')
             .text(function(d) {
-                return d.total;
-            });
+                return d[config.value_col + '_total'];
+            })
+            .style('padding-left', '.5em');
+    }
+
+    function sortNest() {
+        var config = this.config;
+        this.nested_data.sort(function(a, b) {
+            if (config.sort_alpha) {
+                return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
+            } else {
+                var totalcol = config.value_col + '_total';
+                return b[totalcol] - a[totalcol];
+            }
+        });
     }
 
     function onDraw() {
+        sortNest.call(this);
         makeWaffle.call(this);
     }
 
@@ -422,6 +492,7 @@
 
     function onResize() {
         addLineClick.call(this);
+        this.wrap.style('display', 'none');
     }
 
     function onDestroy() {
@@ -447,11 +518,16 @@
         container
             .append('div')
             .classed('wc-component', true)
-            .attr('id', 'wc-waffle');
+            .attr('id', 'wc-waffle')
+            .style('display', 'inline-block')
+            .style('vertical-align', 'top');
         container
             .append('div')
             .classed('wc-component', true)
-            .attr('id', 'wc-chart');
+            .attr('id', 'wc-chart')
+            .style('display', 'inline-block')
+            .style('vertical-align', 'top')
+            .style('width', '900px');
         container
             .append('div')
             .classed('wc-component', true)

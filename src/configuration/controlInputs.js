@@ -4,6 +4,7 @@ export default function controlInputs() {
             type: 'dropdown',
             label: 'Outcome',
             option: 'value_col',
+            values: ['total', 'positive', 'hospitalized', 'death'],
             require: true
         },
         {
