@@ -3,8 +3,15 @@ export default function controlInputs() {
         {
             type: 'dropdown',
             label: 'Outcome',
-            option: 'value_col',
-            values: ['total', 'positive', 'hospitalized', 'death'],
+            option: 'value_labels',
+            multiple: true,
+            values: null,
+            require: true
+        },
+        {
+            type: 'number',
+            label: 'Days Shown',
+            option: 'show_days',
             require: true
         },
         {

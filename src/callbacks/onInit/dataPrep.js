@@ -14,19 +14,19 @@ export default function dataPrep() {
             let shell = {
                 id: id.key,
                 time: time,
-                value: match.length > 0 ? match[0][config.value_col] : null
+                data_reported: match.length > 0
             };
             config.values.forEach(function(val_name) {
-                shell[val_name + '_raw'] = match.length > 0 ? match[0][val_name] : null; //todays cumulative count
-                shell[val_name + '_prev'] = prev.length > 0 ? prev[0][val_name] : null; //yesterday's cumulative count
-                shell[val_name] = +shell[val_name + '_raw'] - +shell[val_name + '_prev']; // new today cases
+                shell[val_name.col + '_raw'] = match.length > 0 ? match[0][val_name.col] : null; //todays cumulative count
+                shell[val_name.col + '_prev'] = prev.length > 0 ? prev[0][val_name.col] : null; //yesterday's cumulative count
+                shell[val_name.col] = shell[val_name.col + '_raw'] - shell[val_name.col + '_prev']; // new today cases
             });
             return shell;
         });
         //get totals
         config.values.forEach(function(val_name) {
-            id[val_name + '_total'] = d3.max(id.values, d => d[val_name])
-                ? d3.max(id.values, d => d[val_name])
+            id[val_name.col + '_total'] = d3.max(id.values, d => d[val_name.col])
+                ? d3.max(id.values, d => d[val_name.col])
                 : 0;
         });
     });
