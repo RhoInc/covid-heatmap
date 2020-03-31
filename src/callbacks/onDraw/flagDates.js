@@ -14,14 +14,14 @@ export default function flagDates() {
     let date_count = this.config.all_times.length;
     let visible_after = date_count - this.config.show_days;
     this.nested_data.forEach(function(state) {
-        state.all_dates.forEach(function(date, i) {
+        state.values.raw.forEach(function(date, i) {
             date.hidden = i < visible_after;
         });
     });
 
     //show the date range in the control
     let end_date_n = d3.max(config.all_times);
-    let end_date = d3.time.format('%Y%m%d').parse(end_date_n);
+    let end_date = d3.time.format('%Y%m%d').parse('' + end_date_n);
 
     let end_datef = d3.time.format('%d%b')(end_date);
     let start_date = d3.time.day.offset(end_date, -1 * config.show_days);

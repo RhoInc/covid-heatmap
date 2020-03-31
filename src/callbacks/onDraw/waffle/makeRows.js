@@ -9,22 +9,22 @@ export default function makeRows(value) {
 
     this.waffle.rows
         .selectAll('td.values.' + value.col)
-        .data(d => d.all_dates)
+        .data(d => d.values.raw)
         .enter()
         .append('td')
         .attr('class', 'values ' + value.col)
-        .text(d => (!config.show_values ? '' : d.data_reported ? d[value.col] : ''))
+        .text(d => (config.show_values ? d[value.col] : ''))
         .style('width', '6px')
         .attr(
             'title',
             d =>
                 config.id_col +
                 ':' +
-                d.id +
+                d[config.id_col] +
                 '\n' +
                 config.time_col +
                 ':' +
-                d.time +
+                d[config.time_col] +
                 '\n' +
                 value.label +
                 ':' +
@@ -45,12 +45,12 @@ export default function makeRows(value) {
         .style('color', '#333')
         .style('text-align', 'center')
         .style('cursor', 'pointer')
-        .style('border', d => (d.data_reported ? '1px solid #ccc' : null));
+        .style('border', d => (d[value.col] == null ? null : '1px solid #ccc'));
 
     this.waffle.rows
         .append('td')
         .attr('class', 'total')
-        .text(d => d[value.col + '_total'])
+        .text(d => d.values[value.col + '_total'])
         .style('font-weight', 'lighter')
         .style('text-align', 'left')
         .style('font-size', '0.8em')

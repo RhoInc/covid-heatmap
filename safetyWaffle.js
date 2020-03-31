@@ -1,10 +1,11 @@
 (function(global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined'
-        ? (module.exports = factory(require('d3'), require('webcharts')))
+        ? (module.exports = factory(require('d3'), require('webcharts'), require('util')))
         : typeof define === 'function' && define.amd
-        ? define(['d3', 'webcharts'], factory)
-        : ((global = global || self), (global.safetyWaffle = factory(global.d3, global.webCharts)));
-})(this, function(d3$1, webcharts) {
+        ? define(['d3', 'webcharts', 'util'], factory)
+        : ((global = global || self),
+          (global.safetyWaffle = factory(global.d3, global.webCharts, global.util)));
+})(this, function(d3$1, webcharts, util) {
     'use strict';
 
     if (typeof Object.assign != 'function') {
@@ -152,15 +153,15 @@
         return {
             id_col: 'state',
             time_col: 'date',
-            value_labels: ['Tests', 'Positives', 'Hospital', 'Deaths'],
+            value_labels: ['Hospital', 'Deaths'],
             show_values: false,
             sort_alpha: false,
             show_days: 14,
             values: [
-                { col: 'total', label: 'Tests', colors: ['#e5f5f9', '#2ca25f'] },
-                { col: 'positive', label: 'Positives', colors: ['#efedf5', '#756bb1'] },
-                { col: 'hospitalized', label: 'Hospital', colors: ['#fee8c8', '#e34a33'] },
-                { col: 'death', label: 'Deaths', colors: ['#fee0d2', '#de2d26'] }
+                { col: 'deathIncrease', label: 'Deaths', colors: ['#fee0d2', '#de2d26'] },
+                { col: 'hospitalizedIncrease', label: 'Hospital', colors: ['#fee8c8', '#e34a33'] },
+                { col: 'positiveIncrease', label: 'Positives', colors: ['#efedf5', '#756bb1'] },
+                { col: 'totalTestResultsIncrease', label: 'Tests', colors: ['#e5f5f9', '#2ca25f'] }
             ]
         };
     }
@@ -273,47 +274,48 @@
                     return d[config.time_col];
                 })
             )
-            .values();
+            .values()
+            .map(function(m) {
+                return +m;
+            });
 
         this.nested_data = d3
             .nest()
             .key(function(d) {
                 return d[config.id_col];
             })
-            .entries(this.raw_data);
+            .rollup(function(d) {
+                var obj = {};
+                obj.raw = d;
+                obj.dates = d.map(function(m) {
+                    return m[config.time_col];
+                });
 
-        this.nested_data.forEach(function(id) {
-            id.all_dates = config.all_times.map(function(time) {
-                var match = id.values.filter(function(d) {
-                    return d[config.time_col] == time;
+                //fill in dates with no data collected
+                config.all_times.forEach(function(date) {
+                    if (obj.dates.indexOf(date) == -1) {
+                        var shell = {};
+                        shell[config.id_col] = d[0][config.id_col];
+                        shell[config.time_col] = date;
+                        config.values.forEach(function(val) {
+                            shell[val.col] = null;
+                        });
+                        obj.raw.push(shell);
+                    }
                 });
-                var prev = id.values.filter(function(d) {
-                    return d[config.time_col] == time - 1;
+                obj.raw.sort(function(a, b) {
+                    return a[config.time_col] - b[config.time_col];
                 });
-                var shell = {
-                    id: id.key,
-                    time: time,
-                    data_reported: match.length > 0
-                };
+
+                //calculate value_col totals for each id
                 config.values.forEach(function(val_name) {
-                    shell[val_name.col + '_raw'] = match.length > 0 ? match[0][val_name.col] : null; //todays cumulative count
-                    shell[val_name.col + '_prev'] = prev.length > 0 ? prev[0][val_name.col] : null; //yesterday's cumulative count
-                    shell[val_name.col] =
-                        shell[val_name.col + '_raw'] - shell[val_name.col + '_prev']; // new today cases
+                    obj[val_name.col + '_total'] = d3.sum(d, function(d) {
+                        return d[val_name.col];
+                    });
                 });
-                return shell;
-            });
-            //get totals
-            config.values.forEach(function(val_name) {
-                id[val_name.col + '_total'] = d3.max(id.values, function(d) {
-                    return d[val_name.col];
-                })
-                    ? d3.max(id.values, function(d) {
-                          return d[val_name.col];
-                      })
-                    : 0;
-            });
-        });
+                return obj;
+            })
+            .entries(this.raw_data);
         console.log(this.nested_data);
     }
 
@@ -321,7 +323,8 @@
         var chart = this;
         this.config.values.forEach(function(value) {
             var max_val = d3.max(chart.nested_data, function(state) {
-                return d3.max(state.all_dates, function(d) {
+                console.log(state);
+                return d3.max(state.values.raw, function(d) {
                     return d[value.col];
                 });
             });
@@ -358,9 +361,9 @@
 
     function makeHeader(value) {
         var config = this.config;
-        var start_date = d3.time.format('%Y%m%d').parse(d3.min(config.all_times));
+        var start_date = d3.time.format('%Y%m%d').parse('' + d3.min(config.all_times));
         var start_datef = d3.time.format('%d%b')(start_date);
-        var end_date = d3.time.format('%Y%m%d').parse(d3.max(config.all_times));
+        var end_date = d3.time.format('%Y%m%d').parse('' + d3.max(config.all_times));
         var end_datef = d3.time.format('%d%b')(end_date);
 
         this.waffle.head1
@@ -417,24 +420,24 @@
         this.waffle.rows
             .selectAll('td.values.' + value.col)
             .data(function(d) {
-                return d.all_dates;
+                return d.values.raw;
             })
             .enter()
             .append('td')
             .attr('class', 'values ' + value.col)
             .text(function(d) {
-                return !config.show_values ? '' : d.data_reported ? d[value.col] : '';
+                return config.show_values ? d[value.col] : '';
             })
             .style('width', '6px')
             .attr('title', function(d) {
                 return (
                     config.id_col +
                     ':' +
-                    d.id +
+                    d[config.id_col] +
                     '\n' +
                     config.time_col +
                     ':' +
-                    d.time +
+                    d[config.time_col] +
                     '\n' +
                     value.label +
                     ':' +
@@ -459,14 +462,14 @@
             .style('text-align', 'center')
             .style('cursor', 'pointer')
             .style('border', function(d) {
-                return d.data_reported ? '1px solid #ccc' : null;
+                return d[value.col] == null ? null : '1px solid #ccc';
             });
 
         this.waffle.rows
             .append('td')
             .attr('class', 'total')
             .text(function(d) {
-                return d[value.col + '_total'];
+                return d.values[value.col + '_total'];
             })
             .style('font-weight', 'lighter')
             .style('text-align', 'left')
@@ -544,8 +547,11 @@
             if (config.sort_alpha) {
                 return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
             } else {
-                var totalcol = config.value_col + '_total';
-                return b[totalcol] - a[totalcol];
+                var totalcol =
+                    config.values.filter(function(f) {
+                        return config.value_labels.indexOf(f.label) > -1;
+                    })[0]['col'] + '_total';
+                return b.values[totalcol] - a.values[totalcol];
             }
         });
     }
@@ -566,14 +572,14 @@
         var date_count = this.config.all_times.length;
         var visible_after = date_count - this.config.show_days;
         this.nested_data.forEach(function(state) {
-            state.all_dates.forEach(function(date, i) {
+            state.values.raw.forEach(function(date, i) {
                 date.hidden = i < visible_after;
             });
         });
 
         //show the date range in the control
         var end_date_n = d3.max(config.all_times);
-        var end_date = d3.time.format('%Y%m%d').parse(end_date_n);
+        var end_date = d3.time.format('%Y%m%d').parse('' + end_date_n);
 
         var end_datef = d3.time.format('%d%b')(end_date);
         var start_date = d3.time.day.offset(end_date, -1 * config.show_days);
@@ -588,37 +594,7 @@
         makeWaffle.call(this);
     }
 
-    function addLineClick() {
-        var chart = this;
-        var paths = this.marks[0].paths;
-
-        paths
-            .on('mouseover', function(d) {
-                d3$1.select(this).classed('highlighted', true);
-            })
-            .on('mouseout', function(d) {
-                d3$1.select(this).classed('highlighted', false);
-            })
-            .on('click', function(d) {
-                console.log(d);
-                chart.listing.wrap.style('display', null);
-                paths.classed('selected', false);
-                d3$1.select(this).classed('selected', true);
-
-                var tableData = d.values.map(function(d) {
-                    return {
-                        ID: d.values.raw[0][chart.config.id_col],
-                        Measure: d.values.raw[0][chart.config.measure_col],
-                        Visit: d.key,
-                        Value: d.values.y
-                    };
-                });
-                chart.listing.draw(tableData);
-            });
-    }
-
     function onResize() {
-        addLineClick.call(this);
         this.wrap.style('display', 'none');
     }
 

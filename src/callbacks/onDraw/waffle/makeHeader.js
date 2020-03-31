@@ -1,8 +1,8 @@
 export default function makeHeader(value) {
     let config = this.config;
-    let start_date = d3.time.format('%Y%m%d').parse(d3.min(config.all_times));
+    let start_date = d3.time.format('%Y%m%d').parse('' + d3.min(config.all_times));
     let start_datef = d3.time.format('%d%b')(start_date);
-    let end_date = d3.time.format('%Y%m%d').parse(d3.max(config.all_times));
+    let end_date = d3.time.format('%Y%m%d').parse('' + d3.max(config.all_times));
     let end_datef = d3.time.format('%d%b')(end_date);
 
     this.waffle.head1

@@ -7,6 +7,7 @@
       <script type = 'text/javascript' src = 'https://cdn.jsdelivr.net/gh/RhoInc/Webcharts/build/webcharts.min.js'></script>
 
       <script type = 'text/javascript' src = 'safetyWaffle.js'></script>
+      <script type='text/javascript' src='src/util/getDailyCounts.js'></script>
 
       <link type = 'text/css' rel = 'stylesheet' href = 'https://cdn.jsdelivr.net/gh/RhoInc/Webcharts/css/webcharts.min.css'>
       <link type = 'text/css' rel = 'stylesheet' href = 'index.css'>
@@ -29,7 +30,11 @@
           filters: [] //updated in sync settings
         }
       const chart =safetyWaffle('#container', settings);
-      d3.json('https://covidtracking.com/api/states/daily', function (data) {      
+      d3.json('https://covidtracking.com/api/states/daily', function (data) {  
+       // let sub = cumulative_data.filter(f => f.state == "AZ")
+       // console.log(sub)
+       // let count_data = getDailyCounts(data, 'date', 'state', ['death',"hospitalized",'total','positive']) 
+       // console.log(count_data)
         chart.init(data);
       });
 </script>
