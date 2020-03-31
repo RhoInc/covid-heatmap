@@ -20,11 +20,18 @@ export default function controlInputs() {
             option: 'show_values',
             require: true
         },
-        ,
+
         {
             type: 'checkbox',
             label: 'Sort Alphabetical',
             option: 'sort_alpha',
+            require: true
+        },
+        {
+            type: 'checkbox',
+            label: 'Show Bar Chart',
+            description: 'Bars drawn using log scale',
+            option: 'show_bars',
             require: true
         }
     ];

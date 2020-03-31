@@ -157,6 +157,7 @@
             show_values: false,
             sort_alpha: false,
             show_days: 14,
+            show_bars: false,
             values: [
                 { col: 'deathIncrease', label: 'Deaths', colors: ['#fee0d2', '#de2d26'] },
                 { col: 'hospitalizedIncrease', label: 'Hospital', colors: ['#fee8c8', '#e34a33'] },
@@ -224,11 +225,17 @@
                 option: 'show_values',
                 require: true
             },
-            ,
             {
                 type: 'checkbox',
                 label: 'Sort Alphabetical',
                 option: 'sort_alpha',
+                require: true
+            },
+            {
+                type: 'checkbox',
+                label: 'Show Bar Chart',
+                description: 'Bars drawn using log scale',
+                option: 'show_bars',
                 require: true
             }
         ];
@@ -322,13 +329,13 @@
     function setScales() {
         var chart = this;
         this.config.values.forEach(function(value) {
-            var max_val = d3.max(chart.nested_data, function(state) {
+            value.max_val = d3.max(chart.nested_data, function(state) {
                 console.log(state);
                 return d3.max(state.values.raw, function(d) {
                     return d[value.col];
                 });
             });
-            var power_of_10 = ('' + max_val).length;
+            var power_of_10 = ('' + value.max_val).length;
             value.max_cut = Math.pow(10, power_of_10 - 1);
         });
     }
@@ -417,7 +424,12 @@
             .range(value.colors)
             .interpolate(d3.interpolateHcl);
 
-        this.waffle.rows
+        var logScale = d3.scale
+            .log()
+            .domain([1, value.max_val])
+            .range([0, 100]);
+
+        var td_values = this.waffle.rows
             .selectAll('td.values.' + value.col)
             .data(function(d) {
                 return d.values.raw;
@@ -428,10 +440,10 @@
             .text(function(d) {
                 return config.show_values ? d[value.col] : '';
             })
-            .style('width', '6px')
+            .style('width', '10px')
+            .style('height', '15px')
             .attr('title', function(d) {
-                return (
-                    config.id_col +
+                return config.id_col +
                     ':' +
                     d[config.id_col] +
                     '\n' +
@@ -441,28 +453,42 @@
                     '\n' +
                     value.label +
                     ':' +
-                    d[value.col]
-                );
-            })
-            .style('background', function(d) {
-                return d[value.col] == null
-                    ? 'white'
-                    : d[value.col] == 0
-                    ? 'white'
-                    : d[value.col] < value.max_cut
-                    ? colorScale(d[value.col])
-                    : value.colors[1];
+                    d[value.col] ==
+                    null
+                    ? 'Not Collected'
+                    : d[value.col];
             })
             .style('display', function(d) {
                 return d.hidden ? 'none' : null;
             })
             .style('font-size', '0.6em')
-            .style('padding', '0 0.2em')
+            //.style('padding', '0 0.2em')
             .style('color', '#333')
             .style('text-align', 'center')
             .style('cursor', 'pointer')
-            .style('border', function(d) {
-                return d[value.col] == null ? null : '1px solid #ccc';
+            // .style('border', d => (d[value.col] == null ? null : '1px solid #ccc'))
+            //  .append('div')
+            //  .style('width', '10px')
+            //  .style('height', '15px')
+            .style('background', function(d) {
+                var color =
+                    d[value.col] == null
+                        ? '#eee'
+                        : d[value.col] == 0
+                        ? 'white'
+                        : d[value.col] < value.max_cut
+                        ? colorScale(d[value.col])
+                        : value.colors[1];
+                var percent = logScale(d[value.col]);
+                var gradient =
+                    'linear-gradient(to top, ' +
+                    color +
+                    ' ' +
+                    percent +
+                    '%, white ' +
+                    percent +
+                    '%)';
+                return config.show_bars ? gradient : color;
             });
 
         this.waffle.rows
@@ -526,10 +552,14 @@
 
         waffle.rows
             .on('mouseover', function(d) {
-                d3.select(this).style('background', '#eee');
+                d3.select(this)
+                    .style('font-weight', '900')
+                    .style('color', 'black');
             })
             .on('mouseout', function(d) {
-                d3.select(this).style('background', null);
+                d3.select(this)
+                    .style('font-weight', 'lighter')
+                    .style('color', '#333');
             });
 
         var values = config.values.filter(function(f) {

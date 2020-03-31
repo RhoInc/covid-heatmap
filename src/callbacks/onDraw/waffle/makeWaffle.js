@@ -42,10 +42,14 @@ export default function makeWaffle() {
 
     waffle.rows
         .on('mouseover', function(d) {
-            d3.select(this).style('background', '#eee');
+            d3.select(this)
+                .style('font-weight', '900')
+                .style('color', 'black');
         })
         .on('mouseout', function(d) {
-            d3.select(this).style('background', null);
+            d3.select(this)
+                .style('font-weight', 'lighter')
+                .style('color', '#333');
         });
 
     let values = config.values.filter(f => config.value_labels.indexOf(f.label) > -1);

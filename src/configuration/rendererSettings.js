@@ -6,6 +6,7 @@ export default function rendererSettings() {
         show_values: false,
         sort_alpha: false,
         show_days: 14,
+        show_bars: false,
         values: [
             { col: 'deathIncrease', label: 'Deaths', colors: ['#fee0d2', '#de2d26'] },
             { col: 'hospitalizedIncrease', label: 'Hospital', colors: ['#fee8c8', '#e34a33'] },
