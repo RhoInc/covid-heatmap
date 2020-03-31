@@ -521,6 +521,14 @@
                 return d.key;
             });
 
+        waffle.rows
+            .on('mouseover', function(d) {
+                d3.select(this).style('background', '#eee');
+            })
+            .on('mouseout', function(d) {
+                d3.select(this).style('background', null);
+            });
+
         var values = config.values.filter(function(f) {
             return config.value_labels.indexOf(f.label) > -1;
         });

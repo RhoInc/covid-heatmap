@@ -40,6 +40,14 @@ export default function makeWaffle() {
         .style('font-size', '0.8em')
         .text(d => d.key);
 
+    waffle.rows
+        .on('mouseover', function(d) {
+            d3.select(this).style('background', '#eee');
+        })
+        .on('mouseout', function(d) {
+            d3.select(this).style('background', null);
+        });
+
     let values = config.values.filter(f => config.value_labels.indexOf(f.label) > -1);
     values.forEach(function(value) {
         makeHeader.call(chart, value);
