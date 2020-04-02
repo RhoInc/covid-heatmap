@@ -1,5 +1,6 @@
 export default function flagDates() {
     let config = this.config;
+    console.log(config);
     let day_control = this.controls.wrap.selectAll('div.control-group').filter(function(d) {
         return d.label == 'Days Shown';
     });
@@ -20,11 +21,9 @@ export default function flagDates() {
     });
 
     //show the date range in the control
-    let end_date_n = d3.max(config.all_times);
-    let end_date = d3.time.format('%Y%m%d').parse('' + end_date_n);
-
-    let end_datef = d3.time.format('%d%b')(end_date);
-    let start_date = d3.time.day.offset(end_date, -1 * config.show_days);
+    let end_date = config.all_times[config.all_times.length - 1];
+    let end_datef = end_date.short;
+    let start_date = d3.time.day.offset(end_date.date, -1 * config.show_days);
     let start_datef = d3.time.format('%d%b')(start_date);
 
     day_control.select('span.span-description').text(start_datef + '-' + end_datef);

@@ -1,5 +1,6 @@
 import makeHeader from './makeHeader';
 import makeRows from './makeRows';
+import waffleClick from './waffleClick';
 
 export default function makeWaffle() {
     let chart = this;
@@ -31,7 +32,13 @@ export default function makeWaffle() {
         .selectAll('tr')
         .data(chart.nested_data)
         .enter()
-        .append('tr');
+        .append('tr')
+        .style('height', d =>
+            config.id_selected == 'All' || config.id_selected == d.key ? '15' : '3'
+        )
+        .style('font-size', d =>
+            config.id_selected == 'All' || config.id_selected == d.key ? null : '0'
+        );
 
     waffle.rows
         .append('td')
@@ -50,6 +57,18 @@ export default function makeWaffle() {
             d3.select(this)
                 .style('font-weight', 'lighter')
                 .style('color', '#333');
+        })
+        .on('click', function(d) {
+            config.id_selected = d.key;
+            chart.controls.wrap
+                .selectAll('div.control-group')
+                .filter(function(d) {
+                    return d.label == 'Select State';
+                })
+                .select('select')
+                .selectAll('option')
+                .property('selected', d => d == config.id_selected);
+            chart.draw();
         });
 
     let values = config.values.filter(f => config.value_labels.indexOf(f.label) > -1);

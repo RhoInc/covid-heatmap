@@ -1,11 +1,13 @@
 export default function rendererSettings() {
     return {
         id_col: 'state',
+        id_selected: 'All',
         time_col: 'date',
-        value_labels: ['Hospital', 'Deaths'],
+        time_format: '%Y%m%d',
+        value_labels: null,
         show_values: false,
         sort_alpha: false,
-        show_days: 14,
+        show_days: null,
         show_bars: false,
         values: [
             { col: 'deathIncrease', label: 'Deaths', colors: ['#fee0d2', '#de2d26'] },

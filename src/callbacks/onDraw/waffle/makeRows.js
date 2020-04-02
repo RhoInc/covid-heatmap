@@ -20,7 +20,6 @@ export default function makeRows(value) {
         .attr('class', 'values ' + value.col)
         .text(d => (config.show_values ? d[value.col] : ''))
         .style('width', '10px')
-        .style('height', '15px')
         .attr('title', d =>
             config.id_col +
                 ':' +

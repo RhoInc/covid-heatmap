@@ -3,7 +3,7 @@
       <title>COVID Waffle plot - US States</title>
       <meta http-equiv = 'Content-Type' content = 'text/html; charset = utf-8'>
 
-      <script type = 'text/javascript' src = 'https://d3js.org/d3.v3.min.js'></script>
+      <script type = 'text/javascript' src = 'https://d3js.org/d3.v3.js'></script>
       <script type = 'text/javascript' src = 'https://cdn.jsdelivr.net/gh/RhoInc/Webcharts/build/webcharts.min.js'></script>
 
       <script type = 'text/javascript' src = 'safetyWaffle.js'></script>
@@ -26,16 +26,11 @@
       let settings = {
           id_col: 'state',
           time_col: 'date',
-          value_col: 'positive',
           filters: [] //updated in sync settings
         }
       const chart =safetyWaffle('#container', settings);
-      d3.json('https://covidtracking.com/api/states/daily', function (data) {  
-       // let sub = cumulative_data.filter(f => f.state == "AZ")
-       // console.log(sub)
-       // let count_data = getDailyCounts(data, 'date', 'state', ['death',"hospitalized",'total','positive']) 
-       // console.log(count_data)
-        chart.init(data);
-      });
+      d3.json('https://covidtracking.com/api/states/daily', function (ct) { 
+          chart.init(ct);
+      })
 </script>
 </html>

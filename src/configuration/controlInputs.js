@@ -2,12 +2,20 @@ export default function controlInputs() {
     return [
         {
             type: 'dropdown',
+            label: 'Select State',
+            option: 'id_selected',
+            values: [],
+            require: true
+        },
+        {
+            type: 'dropdown',
             label: 'Outcome',
             option: 'value_labels',
             multiple: true,
             values: null,
             require: true
         },
+
         {
             type: 'number',
             label: 'Days Shown',

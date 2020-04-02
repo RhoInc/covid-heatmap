@@ -1,9 +1,7 @@
 export default function makeHeader(value) {
     let config = this.config;
-    let start_date = d3.time.format('%Y%m%d').parse('' + d3.min(config.all_times));
-    let start_datef = d3.time.format('%d%b')(start_date);
-    let end_date = d3.time.format('%Y%m%d').parse('' + d3.max(config.all_times));
-    let end_datef = d3.time.format('%d%b')(end_date);
+    let start_date = config.all_times[0].short;
+    let end_date = config.all_times[config.all_times.length - 1].short;
 
     this.waffle.head1
         .append('th')
@@ -33,7 +31,7 @@ export default function makeHeader(value) {
         .attr('colspan', config.show_days)
         .style('text-align', 'right')
         .style('padding-right', '0.2em')
-        .html('&#x2190;' + end_datef);
+        .html('&#x2190;' + end_date);
 
     this.waffle.head2
         .append('th')

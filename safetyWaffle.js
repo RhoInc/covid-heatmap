@@ -152,11 +152,13 @@
     function rendererSettings() {
         return {
             id_col: 'state',
+            id_selected: 'All',
             time_col: 'date',
-            value_labels: ['Hospital', 'Deaths'],
+            time_format: '%Y%m%d',
+            value_labels: null,
             show_values: false,
             sort_alpha: false,
-            show_days: 14,
+            show_days: null,
             show_bars: false,
             values: [
                 { col: 'deathIncrease', label: 'Deaths', colors: ['#fee0d2', '#de2d26'] },
@@ -197,6 +199,9 @@
 
     function syncSettings(settings) {
         // webcharts settings
+        settings.value_labels = settings.values.map(function(m) {
+            return m.label;
+        });
         settings.x.column = settings.time_col;
         settings.y.column = settings.value_col;
         settings.marks[0].per = [settings.id_col];
@@ -205,6 +210,13 @@
 
     function controlInputs() {
         return [
+            {
+                type: 'dropdown',
+                label: 'Select State',
+                option: 'id_selected',
+                values: [],
+                require: true
+            },
             {
                 type: 'dropdown',
                 label: 'Outcome',
@@ -275,6 +287,8 @@
 
     function dataPrep() {
         var config = this.config;
+
+        //parse time to js date format
         config.all_times = d3
             .set(
                 this.raw_data.map(function(d) {
@@ -283,8 +297,27 @@
             )
             .values()
             .map(function(m) {
-                return +m;
+                var timeobj = {};
+                timeobj.raw = m;
+                timeobj.date = d3.time.format(config.time_format).parse(m);
+                timeobj.short = d3.time.format('%d%b')(timeobj.date);
+                timeobj.n = +d3.time.format('%Y%m%d')(timeobj.date);
+                return timeobj;
+            })
+            .sort(function(a, b) {
+                return a.n - b.n;
             });
+        config.show_days = config.all_times.length;
+
+        this.raw_data = this.raw_data.map(function(m) {
+            m[config.time_col + '_date'] = d3.time
+                .format(config.time_format)
+                .parse('' + m[config.time_col]);
+            m[config.time_col + '_short'] = d3.time.format('%d%b')(m[config.time_col + '_date']);
+            m[config.time_col + '_n'] = +d3.time.format('%Y%m%d')(m[config.time_col + '_date']);
+
+            return m;
+        });
 
         this.nested_data = d3
             .nest()
@@ -295,15 +328,17 @@
                 var obj = {};
                 obj.raw = d;
                 obj.dates = d.map(function(m) {
-                    return m[config.time_col];
+                    return m[config.time_col + '_short'];
                 });
 
                 //fill in dates with no data collected
                 config.all_times.forEach(function(date) {
-                    if (obj.dates.indexOf(date) == -1) {
+                    if (obj.dates.indexOf(date.short) == -1) {
                         var shell = {};
                         shell[config.id_col] = d[0][config.id_col];
-                        shell[config.time_col] = date;
+                        shell[config.time_col + '_data'] = date.date;
+                        shell[config.time_col + '_short'] = date.short;
+                        shell[config.time_col + '_n'] = date.n;
                         config.values.forEach(function(val) {
                             shell[val.col] = null;
                         });
@@ -311,7 +346,7 @@
                     }
                 });
                 obj.raw.sort(function(a, b) {
-                    return a[config.time_col] - b[config.time_col];
+                    return a[config.time_col + '_n'] - b[config.time_col + '_n'];
                 });
 
                 //calculate value_col totals for each id
@@ -330,7 +365,6 @@
         var chart = this;
         this.config.values.forEach(function(value) {
             value.max_val = d3.max(chart.nested_data, function(state) {
-                console.log(state);
                 return d3.max(state.values.raw, function(d) {
                     return d[value.col];
                 });
@@ -345,7 +379,7 @@
         setScales.call(this);
     }
 
-    function onLayout() {
+    function selectOutcomes() {
         var config = this.config;
         this.controls.wrap
             .selectAll('div.control-group')
@@ -359,6 +393,36 @@
             });
     }
 
+    function updateIdControl() {
+        this.config.ids = this.nested_data.map(function(m) {
+            return m.key;
+        });
+        this.controls.config.inputs.find(function(f) {
+            return f.label == 'Select State';
+        }).values == this.config.ids;
+        this.controls.wrap.selectAll('div');
+        var options = this.controls.wrap
+            .selectAll('div.control-group')
+            .filter(function(d) {
+                return d.label == 'Select State';
+            })
+            .select('select')
+            .selectAll('option');
+
+        options
+            .data(d3.merge([['All'], this.config.ids]))
+            .enter()
+            .append('option')
+            .text(function(d) {
+                return d;
+            });
+    }
+
+    function onLayout() {
+        selectOutcomes.call(this);
+        updateIdControl.call(this);
+    }
+
     function onPreprocess() {
         chart.listing.draw([]);
         chart.listing.wrap.style('display', 'none');
@@ -368,10 +432,8 @@
 
     function makeHeader(value) {
         var config = this.config;
-        var start_date = d3.time.format('%Y%m%d').parse('' + d3.min(config.all_times));
-        var start_datef = d3.time.format('%d%b')(start_date);
-        var end_date = d3.time.format('%Y%m%d').parse('' + d3.max(config.all_times));
-        var end_datef = d3.time.format('%d%b')(end_date);
+        var start_date = config.all_times[0].short;
+        var end_date = config.all_times[config.all_times.length - 1].short;
 
         this.waffle.head1
             .append('th')
@@ -401,7 +463,7 @@
             .attr('colspan', config.show_days)
             .style('text-align', 'right')
             .style('padding-right', '0.2em')
-            .html('&#x2190;' + end_datef);
+            .html('&#x2190;' + end_date);
 
         this.waffle.head2
             .append('th')
@@ -441,7 +503,6 @@
                 return config.show_values ? d[value.col] : '';
             })
             .style('width', '10px')
-            .style('height', '15px')
             .attr('title', function(d) {
                 return config.id_col +
                     ':' +
@@ -539,7 +600,13 @@
             .selectAll('tr')
             .data(chart.nested_data)
             .enter()
-            .append('tr');
+            .append('tr')
+            .style('height', function(d) {
+                return config.id_selected == 'All' || config.id_selected == d.key ? '15' : '3';
+            })
+            .style('font-size', function(d) {
+                return config.id_selected == 'All' || config.id_selected == d.key ? null : '0';
+            });
 
         waffle.rows
             .append('td')
@@ -560,6 +627,20 @@
                 d3.select(this)
                     .style('font-weight', 'lighter')
                     .style('color', '#333');
+            })
+            .on('click', function(d) {
+                config.id_selected = d.key;
+                chart.controls.wrap
+                    .selectAll('div.control-group')
+                    .filter(function(d) {
+                        return d.label == 'Select State';
+                    })
+                    .select('select')
+                    .selectAll('option')
+                    .property('selected', function(d) {
+                        return d == config.id_selected;
+                    });
+                chart.draw();
             });
 
         var values = config.values.filter(function(f) {
@@ -588,6 +669,7 @@
 
     function flagDates() {
         var config = this.config;
+        console.log(config);
         var day_control = this.controls.wrap.selectAll('div.control-group').filter(function(d) {
             return d.label == 'Days Shown';
         });
@@ -608,11 +690,9 @@
         });
 
         //show the date range in the control
-        var end_date_n = d3.max(config.all_times);
-        var end_date = d3.time.format('%Y%m%d').parse('' + end_date_n);
-
-        var end_datef = d3.time.format('%d%b')(end_date);
-        var start_date = d3.time.day.offset(end_date, -1 * config.show_days);
+        var end_date = config.all_times[config.all_times.length - 1];
+        var end_datef = end_date.short;
+        var start_date = d3.time.day.offset(end_date.date, -1 * config.show_days);
         var start_datef = d3.time.format('%d%b')(start_date);
 
         day_control.select('span.span-description').text(start_datef + '-' + end_datef);

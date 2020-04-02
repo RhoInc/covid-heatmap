@@ -1,11 +1,7 @@
+import selectOutcomes from './onLayout/selectOutcomes';
+import updateIdControl from './onLayout/updateIdControl';
+
 export default function onLayout() {
-    let config = this.config;
-    this.controls.wrap
-        .selectAll('div.control-group')
-        .filter(function(d) {
-            return d.label == 'Outcome';
-        })
-        .select('select')
-        .selectAll('option')
-        .attr('selected', d => (config.value_labels.indexOf(d) > -1 ? 'selected' : null));
+    selectOutcomes.call(this);
+    updateIdControl.call(this);
 }
